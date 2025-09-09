@@ -103,7 +103,7 @@ if "partner_id" not in st.session_state:
 
 # UI
 st.set_page_config(page_title="仮つながりスペース", layout="centered")
-st.title("🫧 仮つながりスペース（プロトタイプ）")
+st.title("仮つながりスペース（プロトタイプ）")
 st.write(f"あなたの仮ID: `{st.session_state.kari_id}`")
 
 # パートナー入力
@@ -113,7 +113,7 @@ if partner:
     st.write(f"相手: `{partner}`")
 
     # 話題カード（仮）
-    st.markdown("💬 話題カード: **羽生くんの好きな演技は？**")
+    st.markdown("話題カード: **羽生くんの好きな演技は？**")
 
     # メッセージ表示
     messages = get_messages(st.session_state.kari_id, partner)
@@ -148,7 +148,7 @@ if partner:
 
 # 申請受信一覧
 st.divider()
-st.subheader("📬 受信した友達申請")
+st.subheader("受信した友達申請")
 requests = get_received_requests(st.session_state.kari_id)
 if requests:
     for req in requests:
