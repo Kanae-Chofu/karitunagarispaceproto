@@ -31,7 +31,33 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 仮ID生成（色＋動物）
+# 話題カードテンプレート（22テーマ × 3トピック）
+topics = {
+    "猫": ["猫派？犬派？", "飼ってる猫の名前は？", "猫の仕草で好きなものは？"],
+    "ゲーム": ["最近ハマってるゲームは？", "感動した瞬間は？", "推しキャラは？"],
+    "旅行": ["最近行った場所は？", "旅先での思い出は？", "理想の旅って？"],
+    "音楽": ["よく聴くジャンルは？", "好きなアーティストは？", "音楽で救われた瞬間ある？"],
+    "映画": ["最近観た映画は？", "泣いた映画ある？", "推し俳優は？"],
+    "本": ["好きな作家は？", "人生変えた一冊ある？", "読書ってどんな時にする？"],
+    "カフェ": ["お気に入りのカフェある？", "コーヒー派？紅茶派？", "理想のカフェ空間って？"],
+    "学校": ["得意だった科目は？", "部活何してた？", "学校での思い出ある？"],
+    "仕事": ["今どんな仕事してる？", "やりがい感じる瞬間は？", "理想の働き方って？"],
+    "推し活": ["推しは誰？", "推しのどこが好き？", "推しに救われたことある？"],
+    "SNS": ["よく使うSNSは？", "SNSで嬉しかったことある？", "SNSとの距離感どうしてる？"],
+    "料理": ["得意料理ある？", "最近作ったものは？", "食べる専門？作る派？"],
+    "天気": ["雨の日どう過ごす？", "好きな季節は？", "天気で気分変わるタイプ？"],
+    "ファッション": ["服選びのこだわりある？", "好きな色は？", "最近買った服ある？"],
+    "趣味": ["最近の趣味は？", "昔ハマってたことある？", "趣味って人生に必要？"],
+    "睡眠": ["寝るの得意？", "理想の睡眠時間は？", "寝る前にすることある？"],
+    "朝": ["朝型？夜型？", "朝のルーティンある？", "朝ごはん食べる派？"],
+    "夜": ["夜ってどんな気分？", "夜に聴きたい音楽ある？", "夜更かしするタイプ？"],
+    "ペット": ["飼ってるペットいる？", "ペットとの思い出ある？", "理想のペットは？"],
+    "アート": ["好きな画家いる？", "美術館行く？", "自分で描いたことある？"],
+    "スポーツ": ["観る派？やる派？", "好きなスポーツは？", "運動得意？"],
+    "言葉": ["好きな言葉ある？", "座右の銘ってある？", "言葉に救われたことある？"]
+}
+
+# 仮ID生成
 def generate_kari_id():
     colors = ["青い", "赤い", "白い", "黒い", "緑の"]
     animals = ["風", "猫", "鳥", "月", "狐"]
@@ -61,7 +87,7 @@ def init_db():
 
 init_db()
 
-# メッセージ保存
+# メッセージ保存・取得
 def save_message(kari_id, partner_id, message):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -70,7 +96,6 @@ def save_message(kari_id, partner_id, message):
     conn.commit()
     conn.close()
 
-# メッセージ取得
 def get_messages(kari_id, partner_id):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -82,7 +107,7 @@ def get_messages(kari_id, partner_id):
     conn.close()
     return messages
 
-# 友達申請送信
+# 友達申請・承認・取得
 def send_friend_request(from_id, to_id):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -95,7 +120,6 @@ def send_friend_request(from_id, to_id):
     conn.close()
     return True
 
-# 申請受信一覧
 def get_received_requests(my_id):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -104,7 +128,6 @@ def get_received_requests(my_id):
     conn.close()
     return [r[0] for r in requests]
 
-# 申請承認処理
 def approve_friend_request(my_id, from_id):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -114,7 +137,6 @@ def approve_friend_request(my_id, from_id):
     conn.commit()
     conn.close()
 
-# 友達一覧取得
 def get_friends(my_id):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -128,55 +150,73 @@ if "kari_id" not in st.session_state:
     st.session_state.kari_id = generate_kari_id()
 if "partner_id" not in st.session_state:
     st.session_state.partner_id = ""
+if "selected_theme" not in st.session_state:
+    st.session_state.selected_theme = None
+    st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
+if "card_index" not in st.session_state:
+    st.session_state.card_index = 0
 
 # UI
 st.set_page_config(page_title="仮つながりスペース", layout="centered")
 st.title("仮つながりスペース（プロトタイプ）")
 st.write(f"あなたの仮ID: `{st.session_state.kari_id}`")
 
-# パートナー入力
-partner = st.text_input("話したい相手の仮IDを入力", st.session_state.partner_id)
-if partner:
-    st.session_state.partner_id = partner
-    st.write(f"相手: `{partner}`")
+# テーマ選択
+if not st.session_state.selected_theme:
+    chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
+    if st.button("このテーマで話す"):
+        st.session_state.selected_theme = chosen
+        st.session_state.card_index = 0
+        st.rerun()
+else:
+    theme = st.session_state.selected_theme
+    card_index = st.session_state.card_index
+    st.markdown(f"話題カード: **{topics[theme][card_index]}**")
 
-    # 話題カード（仮）
-    st.markdown("話題カード: **羽生くんの好きな演技は？**")
-
-    # メッセージ表示
-    messages = get_messages(st.session_state.kari_id, partner)
-    for sender, msg, _ in messages:
-        align = "right" if sender == st.session_state.kari_id else "left"
-        bg = "#1F2F54" if align == "right" else "#426AB3"
-        st.markdown(
-            f"""
-            <div style='text-align: {align}; margin: 5px 0;'>
-                <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
-                    {msg}
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # メッセージ送信（エンター対応）
-    new_message = st.chat_input("メッセージを入力してください")
-    if new_message:
-        save_message(st.session_state.kari_id, partner, new_message)
+    if st.button("次の話題カード"):
+        st.session_state.card_index = (card_index + 1) % len(topics[theme])
         st.rerun()
 
-    # 3往復以上で申請可能
-    if len(messages) >= 6:
-        st.success("この人と友達申請できます（3往復以上）")
-        if st.button("友達申請する", use_container_width=True):
-            if send_friend_request(st.session_state.kari_id, partner):
-                st.success("申請を送信しました！")
-            else:
-                st.info("すでに申請済みです")
+    # パートナー入力
+    partner = st.text_input("話したい相手の仮IDを入力", st.session_state.partner_id)
+    if partner:
+        st.session_state.partner_id = partner
+        st.write(f"相手: `{partner}`")
+
+        # チャット履歴表示
+        messages = get_messages(st.session_state.kari_id, partner)
+        for sender, msg, _ in messages:
+            align = "right" if sender == st.session_state.kari_id else "left"
+            bg = "#1F2F54" if align == "right" else "#426AB3"
+            st.markdown(
+                f"""
+                <div style='text-align: {align}; margin: 5px 0;'>
+                    <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
+                        {msg}
+                    </span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        # メッセージ送信
+        new_message = st.chat_input("メッセージを入力してください")
+        if new_message:
+            save_message(st.session_state.kari_id, partner, new_message)
+            st.rerun()
+
+        # 3往復以上で申請可能
+        if len(messages) >= 6:
+            st.success("🌱 この人と友達申請できます（3往復以上）")
+            if st.button("友達申請する", use_container_width=True):
+                if send_friend_request(st.session_state.kari_id, partner):
+                    st.success("申請を送信しました！")
+                else:
+                    st.info("すでに申請済みです")
 
 # 申請受信一覧
 st.divider()
-st.subheader("受信した友達申請")
+st.subheader("📬 受信した友達申請")
 requests = get_received_requests(st.session_state.kari_id)
 if requests:
     for req in requests:
