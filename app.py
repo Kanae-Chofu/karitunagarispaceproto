@@ -3,6 +3,34 @@ import sqlite3
 import random
 from datetime import datetime
 
+# 🌙 ダークモード固定
+st.markdown(
+    """
+    <style>
+    body, .stApp {
+        background-color: #000000;
+        color: #FFFFFF;
+    }
+    div[data-testid="stHeader"] {
+        background-color: #000000;
+    }
+    div[data-testid="stToolbar"] {
+        display: none;
+    }
+    input, textarea {
+        background-color: #1F2F54 !important;
+        color: #FFFFFF !important;
+    }
+    button {
+        background-color: #426AB3 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # 仮ID生成（色＋動物）
 def generate_kari_id():
     colors = ["青い", "赤い", "白い", "黒い", "緑の"]
@@ -139,7 +167,7 @@ if partner:
 
     # 3往復以上で申請可能
     if len(messages) >= 6:
-        st.success("🌱 この人と友達申請できます（3往復以上）")
+        st.success("この人と友達申請できます（3往復以上）")
         if st.button("友達申請する", use_container_width=True):
             if send_friend_request(st.session_state.kari_id, partner):
                 st.success("申請を送信しました！")
@@ -164,7 +192,7 @@ else:
     st.write("現在、受信した申請はありません。")
 
 # 友達一覧表示
-st.subheader("👥 あなたの友達一覧")
+st.subheader("あなたの友達一覧")
 friends = get_friends(st.session_state.kari_id)
 if friends:
     for f in friends:
