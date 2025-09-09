@@ -147,6 +147,16 @@ def get_friends(my_id):
 
 # UI開始
 st.set_page_config(page_title="仮つながりスペース", layout="centered")
+
+# ⏱ 自動更新（5秒ごと）
+st.markdown("""
+<script>
+    setTimeout(function() {
+        window.location.reload();
+    }, 5000);
+</script>
+""", unsafe_allow_html=True)
+
 st.title("仮つながりスペース")
 
 # ログイン状態確認
