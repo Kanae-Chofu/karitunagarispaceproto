@@ -53,51 +53,28 @@ topics = {
 def init_db():
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
-
-    # ユーザー管理テーブル（仮ID＋パスワード）
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            kari_id TEXT PRIMARY KEY,
-            password TEXT
-        )
-    ''')
-
-    # メッセージテーブル（仮ID同士のチャット＋話題テーマ）
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            kari_id TEXT,
-            partner_id TEXT,
-            message TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    # topic_theme カラムを追加（存在しない場合のみ）
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+                    kari_id TEXT PRIMARY KEY,
+                    password TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kari_id TEXT,
+                    partner_id TEXT,
+                    message TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     try:
         c.execute("ALTER TABLE messages ADD COLUMN topic_theme TEXT")
     except sqlite3.OperationalError:
-        pass  # すでに存在していれば無視
-
-    # 友達申請テーブル（申請元・申請先・ステータス）
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS friend_requests (
-            from_id TEXT,
-            to_id TEXT,
-            status TEXT DEFAULT 'pending',
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    # 承認済みの友達関係テーブル（双方向）
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS friends (
-            user TEXT,
-            friend TEXT,
-            UNIQUE(user, friend)
-        )
-    ''')
-
+        pass
+    c.execute('''CREATE TABLE IF NOT EXISTS friend_requests (
+                    from_id TEXT,
+                    to_id TEXT,
+                    status TEXT DEFAULT 'pending',
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS friends (
+                    user TEXT,
+                    friend TEXT,
+                    UNIQUE(user, friend))''')
     conn.commit()
     conn.close()
 
@@ -124,7 +101,7 @@ def login_user(kari_id, password):
     conn.close()
     return result is not None
 
-# メッセージ保存（テーマ付き）
+# メッセージ保存
 def save_message(kari_id, partner_id, message, theme=None):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -215,9 +192,9 @@ if "kari_id" in st.session_state:
         shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
         if shared_theme:
-            st.markdown(f"この会話のテーマ: **{shared_theme}**")
+            st.markdown(f"🧠 この会話のテーマ: **{shared_theme}**")
             card_index = st.session_state.get("card_index", 0)
-            st.markdown(f"話題カード: **{topics[shared_theme][card_index]}**")
+            st.markdown(f"💬 話題カード: **{topics[shared_theme][card_index]}**")
             if st.button("次の話題カード"):
                 st.session_state.card_index = (card_index + 1) % len(topics[shared_theme])
                 st.rerun()
@@ -230,21 +207,23 @@ if "kari_id" in st.session_state:
                 st.session_state.shared_theme = chosen
                 st.rerun()
 
-        # チャット履歴表示
-        messages = get_messages(st.session_state.kari_id, partner)
-        for sender, msg in messages:
-            align = "right" if sender == st.session_state.kari_id else "left"
-            bg = "#1F2F54" if align == "right" else "#426AB3"
-            st.markdown(
-                f"""
-                <div style='text-align: {align}; margin: 5px 0;'>
-                    <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
-                        {msg}
-                    </span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        # チャット履歴表示（滑らかな更新）
+        chat_box = st.empty()
+        with chat_box:
+            messages = get_messages(st.session_state.kari_id, partner)
+            for sender, msg in messages:
+                align = "right" if sender == st.session_state.kari_id else "left"
+                bg = "#1F2F54" if align == "right" else "#426AB3"
+                st.markdown(
+                    f"""
+                    <div style='text-align: {align}; margin: 5px 0;'>
+                        <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
+                            {msg}
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
         # メッセージ送信
         new_message = st.chat_input("メッセージを入力")
@@ -266,7 +245,7 @@ if "kari_id" in st.session_state:
 
     # 申請受信一覧
     st.divider()
-    st.subheader("受信した友達申請")
+    st.subheader("📬 受信した友達申請")
     requests = get_received_requests(st.session_state.kari_id)
     if requests:
         for req in requests:
@@ -282,7 +261,7 @@ if "kari_id" in st.session_state:
         st.write("現在、受信した申請はありません。")
 
     # 友達一覧表示（再接続ボタン付き）
-    st.subheader("あなたの友達一覧")
+    st.subheader("👥 あなたの友達一覧")
     friends = get_friends(st.session_state.kari_id)
     if friends:
         for f in friends:
@@ -297,7 +276,7 @@ if "kari_id" in st.session_state:
         st.write("まだ友達はいません。")
 
 else:
-    st.subheader("ログイン")
+    st.subheader("🔐 ログイン")
     login_id = st.text_input("仮IDでログイン")
     login_pw = st.text_input("パスワード", type="password")
     if st.button("ログインする"):
@@ -308,7 +287,7 @@ else:
         else:
             st.error("ログインに失敗しました。仮IDまたはパスワードが違います")
 
-    st.subheader("新規登録")
+    st.subheader("🆕 新規登録")
     new_id = st.text_input("仮IDを入力（例：赤い猫）")
     new_pw = st.text_input("パスワードを入力", type="password")
     if st.button("登録する"):
