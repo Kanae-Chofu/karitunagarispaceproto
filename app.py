@@ -204,7 +204,6 @@ if "kari_id" in st.session_state:
     if partner:
         st.write(f"相手: `{partner}`")
 
-        # 🔽 shared_theme をここで定義
         shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
         if shared_theme:
@@ -220,16 +219,13 @@ if "kari_id" in st.session_state:
                 st.stop()
             theme = st.session_state.selected_theme
 
-    # 🔽 ここから話題カード・チャット処理などを続ける
-
-        # 話題カード表示
+        # 🔽 ここからすべてインデントを揃えて入れる
         card_index = st.session_state.get("card_index", 0)
         st.markdown(f" 話題カード: **{topics[theme][card_index]}**")
         if st.button("次の話題カード"):
             st.session_state.card_index = (card_index + 1) % len(topics[theme])
             st.rerun()
 
-        # チャット履歴表示
         messages = get_messages(st.session_state.kari_id, partner)
         for sender, msg in messages:
             align = "right" if sender == st.session_state.kari_id else "left"
@@ -245,7 +241,6 @@ if "kari_id" in st.session_state:
                 unsafe_allow_html=True
             )
 
-        # メッセージ送信（最初の送信者だけがテーマを保存）
         new_message = st.chat_input("メッセージを入力")
         if new_message:
             theme_to_save = get_shared_theme(st.session_state.kari_id, partner)
@@ -254,7 +249,6 @@ if "kari_id" in st.session_state:
             save_message(st.session_state.kari_id, partner, new_message, theme_to_save)
             st.rerun()
 
-        # 3往復以上で友達申請可能
         if len(messages) >= 6:
             st.success("この人と友達申請できます（3往復以上）")
             if st.button("友達申請する", use_container_width=True):
