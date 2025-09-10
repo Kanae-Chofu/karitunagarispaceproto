@@ -119,6 +119,18 @@ def get_messages(kari_id, partner_id):
     conn.close()
     return messages
 
+def get_shared_theme(kari_id, partner_id):
+    conn = sqlite3.connect("chat.db")
+    c = conn.cursor()
+    c.execute('''SELECT topic_theme FROM messages 
+                 WHERE ((kari_id=? AND partner_id=?) OR (kari_id=? AND partner_id=?)) 
+                 AND topic_theme IS NOT NULL 
+                 ORDER BY timestamp LIMIT 1''',
+              (kari_id, partner_id, partner_id, kari_id))
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
 def send_friend_request(from_id, to_id):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
