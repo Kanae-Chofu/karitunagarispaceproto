@@ -190,6 +190,15 @@ elif time.time() - st.session_state.last_refresh > 3:
 
 st.title("仮つながりスペース")
 
+# ⏱ 自動更新（5秒ごと）
+if "last_refresh" not in st.session_state:
+    st.session_state.last_refresh = time.time()
+elif time.time() - st.session_state.last_refresh > 3:
+    st.session_state.last_refresh = time.time()
+    st.rerun()
+
+st.title("仮つながりスペース")
+
 # ログイン状態確認
 if "kari_id" in st.session_state:
     st.write(f"現在ログイン中： `{st.session_state.kari_id}`")
