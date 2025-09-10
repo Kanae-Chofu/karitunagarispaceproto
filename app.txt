@@ -210,5 +210,62 @@ if "kari_id" in st.session_state:
             save_message(st.session_state.kari_id, partner, new_message, theme_to_save)
             st.rerun()
 
+        # 3往復以上で友達申請可能
         if len(messages) >= 6:
-            st.success("この人
+            st.success("この人と友達申請できます（3往復以上）")
+            if st.button("友達申請する", use_container_width=True):
+                if send_friend_request(st.session_state.kari_id, partner):
+                    st.success("申請を送信しました！")
+                else:
+                    st.info("すでに申請済みです")
+
+    # 申請受信一覧
+    st.divider()
+    st.subheader("受信した友達申請")
+    requests = get_received_requests(st.session_state.kari_id)
+    if requests:
+        for req in requests:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"仮ID `{req}` から申請があります")
+            with col2:
+                if st.button(f"承認する（{req}）", key=f"approve_{req}"):
+                    approve_friend_request(st.session_state.kari_id, req)
+                    st.success(f"{req} を友達に追加しました！")
+                    st.rerun()
+    else:
+        st.write("現在、受信した申請はありません。")
+
+    # 友達一覧表示
+    st.subheader("あなたの友達一覧")
+    friends = get_friends(st.session_state.kari_id)
+    if friends:
+        for f in friends:
+            st.write(f"・仮ID `{f}`")
+    else:
+        st.write("まだ友達はいません。")
+
+# ログインしていない場合
+else:
+    st.subheader("ログイン")
+    login_id = st.text_input("仮IDでログイン")
+    login_pw = st.text_input("パスワード", type="password")
+    if st.button("ログインする"):
+        if login_user(login_id, login_pw):
+            st.session_state.kari_id = login_id
+            st.success(f"ようこそ、{login_id} さん！")
+            st.rerun()
+        else:
+            st.error("ログインに失敗しました。仮IDまたはパスワードが違います")
+
+    st.subheader("新規登録")
+    new_id = st.text_input("仮IDを入力（例：赤い猫）")
+    new_pw = st.text_input("パスワードを入力", type="password")
+    if st.button("登録する"):
+        if register_user(new_id, new_pw):
+            st.success("登録が完了しました！ログインしました")
+            st.session_state.kari_id = new_id
+            st.rerun()
+        else:
+            st.error("その仮IDはすでに使われています")
+            
