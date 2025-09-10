@@ -209,17 +209,18 @@ if "kari_id" in st.session_state:
         # 話題テーマの共有チェック
         shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
-        if shared_theme:
-            theme = shared_theme
-        else:
-            if "selected_theme" not in st.session_state:
-                st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
-                chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
-                if st.button("このテーマで話す"):
-                    st.session_state.selected_theme = chosen
-                    st.session_state.card_index = 0
-                    st.rerun()
-            theme = st.session_state.selected_theme
+    if shared_theme:
+        theme = shared_theme
+    else:
+        if "selected_theme" not in st.session_state:
+            st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
+            chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
+            if st.button("このテーマで話す"):
+                st.session_state.selected_theme = chosen
+                st.session_state.card_index = 0
+                st.rerun()
+            st.stop()  # ← ここで処理を止めて、選択後に再実行されるようにする
+        theme = st.session_state.selected_theme
 
         # 話題カード表示
         card_index = st.session_state.get("card_index", 0)
