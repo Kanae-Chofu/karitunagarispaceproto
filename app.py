@@ -99,12 +99,15 @@ def login_user(kari_id, password):
     conn.close()
     return result is not None
 
-# メッセージ・申請・承認・友達取得
-def save_message(kari_id, partner_id, message):
+def save_message(kari_id, partner_id, message, theme=None):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
-    c.execute("INSERT INTO messages (kari_id, partner_id, message) VALUES (?, ?, ?)",
-              (kari_id, partner_id, message))
+    if theme:
+        c.execute("INSERT INTO messages (kari_id, partner_id, message, topic_theme) VALUES (?, ?, ?, ?)",
+                  (kari_id, partner_id, message, theme))
+    else:
+        c.execute("INSERT INTO messages (kari_id, partner_id, message) VALUES (?, ?, ?)",
+                  (kari_id, partner_id, message))
     conn.commit()
     conn.close()
 
