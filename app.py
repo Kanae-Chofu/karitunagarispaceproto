@@ -9,18 +9,9 @@ st.markdown("""
 body, .stApp { background-color: #000000; color: #FFFFFF; }
 div[data-testid="stHeader"] { background-color: #000000; }
 div[data-testid="stToolbar"] { display: none; }
-input, textarea { background-color: #1F2F54 !important; color:#FFFFFF !important; }
-button { background-color: #426AB3 !important; color:#FFFFFF !important; border: none !important; }
+input, textarea { background-color: #1F2F54 !important; color: #FFFFFF !important; }
+button { background-color: #426AB3 !important; color: #FFFFFF !important; border: none !important; }
 </style>
-""", unsafe_allow_html=True)
-
-# ⏱ 自動更新（5秒ごと）
-st.markdown("""
-<script>
-    setTimeout(function() {
-        window.location.reload();
-    }, 5000);
-</script>
 """, unsafe_allow_html=True)
 
 # 話題カードテンプレート（22テーマ × 3トピック）
@@ -62,10 +53,6 @@ def init_db():
                     partner_id TEXT,
                     message TEXT,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    try:
-        c.execute("ALTER TABLE messages ADD COLUMN topic_theme TEXT")
-    except sqlite3.OperationalError:
-        pass
     c.execute('''CREATE TABLE IF NOT EXISTS friend_requests (
                     from_id TEXT,
                     to_id TEXT,
@@ -101,16 +88,12 @@ def login_user(kari_id, password):
     conn.close()
     return result is not None
 
-# メッセージ保存
-def save_message(kari_id, partner_id, message, theme=None):
+# メッセージ・申請・承認・友達取得
+def save_message(kari_id, partner_id, message):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
-    if theme:
-        c.execute("INSERT INTO messages (kari_id, partner_id, message, topic_theme) VALUES (?, ?, ?, ?)",
-                  (kari_id, partner_id, message, theme))
-    else:
-        c.execute("INSERT INTO messages (kari_id, partner_id, message) VALUES (?, ?, ?)",
-                  (kari_id, partner_id, message))
+    c.execute("INSERT INTO messages (kari_id, partner_id, message) VALUES (?, ?, ?)",
+              (kari_id, partner_id, message))
     conn.commit()
     conn.close()
 
@@ -124,18 +107,6 @@ def get_messages(kari_id, partner_id):
     messages = c.fetchall()
     conn.close()
     return messages
-
-def get_shared_theme(kari_id, partner_id):
-    conn = sqlite3.connect("chat.db")
-    c = conn.cursor()
-    c.execute('''SELECT topic_theme FROM messages 
-                 WHERE ((kari_id=? AND partner_id=?) OR (kari_id=? AND partner_id=?)) 
-                 AND topic_theme IS NOT NULL 
-                 ORDER BY timestamp LIMIT 1''',
-              (kari_id, partner_id, partner_id, kari_id))
-    result = c.fetchone()
-    conn.close()
-    return result[0] if result else None
 
 def send_friend_request(from_id, to_id):
     conn = sqlite3.connect("chat.db")
@@ -176,44 +147,47 @@ def get_friends(my_id):
 
 # UI開始
 st.set_page_config(page_title="仮つながりスペース", layout="centered")
+
+# ⏱ 自動更新（5秒ごと）
+st.markdown("""
+<script>
+    setTimeout(function() {
+        window.location.reload();
+    }, 5000);
+</script>
+""", unsafe_allow_html=True)
+
 st.title("仮つながりスペース")
 
 # ログイン状態確認
 if "kari_id" in st.session_state:
     st.write(f"現在ログイン中： `{st.session_state.kari_id}`")
 
-partner = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
-if partner:
-    st.session_state.partner_id = partner
-    st.write(f"相手: `{partner}`")
-
-    # 🔧 ここで shared_theme を定義
-    shared_theme = get_shared_theme(st.session_state.kari_id, partner)
-
-    if shared_theme:
-        if "card_index" not in st.session_state:
-            st.session_state.card_index = 0
-        st.markdown(f"この会話のテーマ: **{shared_theme}**")
-        card_index = st.session_state.card_index
-        st.markdown(f"話題カード: **{topics[shared_theme][card_index]}**")
-        if st.button("次の話題カード"):
-            st.session_state.card_index = (card_index + 1) % len(topics[shared_theme])
-            st.rerun()
-    else:
+    # 話題カードテーマ選択
+    if "selected_theme" not in st.session_state:
         st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
         chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
         if st.button("このテーマで話す"):
             st.session_state.selected_theme = chosen
             st.session_state.card_index = 0
-            st.session_state.shared_theme = chosen
+            st.rerun()
+    else:
+        theme = st.session_state.selected_theme
+        card_index = st.session_state.card_index
+        st.markdown(f" 話題カード: **{topics[theme][card_index]}**")
+
+        if st.button("次の話題カード"):
+            st.session_state.card_index = (card_index + 1) % len(topics[theme])
             st.rerun()
 
-        # チャット履歴表示（滑らかな更新＋履歴全表示）
-        chat_box = st.empty()
-        with chat_box:
-            messages = get_messages(st.session_state.kari_id, partner)
-            st.write(f"履歴件数: {len(messages)}")  # ← デバッグ表示（必要なら削除OK）
+        # パートナー入力
+        partner = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+        if partner:
+            st.session_state.partner_id = partner
+            st.write(f"相手: `{partner}`")
 
+            # チャット履歴表示
+            messages = get_messages(st.session_state.kari_id, partner)
             for sender, msg in messages:
                 align = "right" if sender == st.session_state.kari_id else "left"
                 bg = "#1F2F54" if align == "right" else "#426AB3"
@@ -228,23 +202,20 @@ if partner:
                     unsafe_allow_html=True
                 )
 
-        # メッセージ送信
-        new_message = st.chat_input("メッセージを入力")
-        if new_message:
-            theme_to_save = get_shared_theme(st.session_state.kari_id, partner)
-            if not theme_to_save and "shared_theme" in st.session_state:
-                theme_to_save = st.session_state.shared_theme
-            save_message(st.session_state.kari_id, partner, new_message, theme_to_save)
-            st.rerun()
+            # メッセージ送信
+            new_message = st.chat_input("メッセージを入力")
+            if new_message:
+                save_message(st.session_state.kari_id, partner, new_message)
+                st.rerun()
 
-        # 3往復以上で友達申請可能
-        if len(messages) >= 6:
-            st.success("この人と友達申請できます（3往復以上）")
-            if st.button("友達申請する", use_container_width=True):
-                if send_friend_request(st.session_state.kari_id, partner):
-                    st.success("申請を送信しました！")
-                else:
-                    st.info("すでに申請済みです")
+            # 3往復以上で友達申請可能
+            if len(messages) >= 6:
+                st.success("この人と友達申請できます（3往復以上）")
+                if st.button("友達申請する", use_container_width=True):
+                    if send_friend_request(st.session_state.kari_id, partner):
+                        st.success("申請を送信しました！")
+                    else:
+                        st.info("すでに申請済みです")
 
     # 申請受信一覧
     st.divider()
@@ -263,23 +234,17 @@ if partner:
     else:
         st.write("現在、受信した申請はありません。")
 
-    # 友達一覧表示（再接続ボタン付き）
+    # 友達一覧表示
     st.subheader("あなたの友達一覧")
     friends = get_friends(st.session_state.kari_id)
     if friends:
         for f in friends:
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.write(f"・仮ID `{f}`")
-            with col2:
-                if st.button(f"また話す（{f}）", key=f"chat_{f}"):
-                    st.session_state.partner_id = f
-                    st.rerun()
+            st.write(f"・仮ID `{f}`")
     else:
         st.write("まだ友達はいません。")
 
 else:
-    st.subheader(" ログイン")
+    st.subheader("ログイン")
     login_id = st.text_input("仮IDでログイン")
     login_pw = st.text_input("パスワード", type="password")
     if st.button("ログインする"):
@@ -298,3 +263,4 @@ else:
             st.success("登録が完了しました！ログインしてください")
         else:
             st.error("その仮IDはすでに使われています")
+
