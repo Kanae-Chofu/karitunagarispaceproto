@@ -195,30 +195,30 @@ if "kari_id" in st.session_state:
     st.write(f"現在ログイン中： `{st.session_state.kari_id}`")
 
 
-    # パートナー入力（常にセッション状態から取得）
-partner_input = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
-if partner_input:
-    st.session_state.partner_id = partner_input
+        # パートナー入力（常にセッション状態から取得）
+    partner_input = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+    if partner_input:
+        st.session_state.partner_id = partner_input
 
-partner = st.session_state.get("partner_id", "")
-if partner:
-    st.write(f"相手: `{partner}`")
+    partner = st.session_state.get("partner_id", "")
+    if partner:
+        st.write(f"相手: `{partner}`")
 
-    # 🔽 shared_theme をここで定義
-    shared_theme = get_shared_theme(st.session_state.kari_id, partner)
+        # 🔽 shared_theme をここで定義
+        shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
-    if shared_theme:
-        theme = shared_theme
-    else:
-        if "selected_theme" not in st.session_state:
-            st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
-            chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
-            if st.button("このテーマで話す"):
-                st.session_state.selected_theme = chosen
-                st.session_state.card_index = 0
-                st.rerun()
-            st.stop()
-        theme = st.session_state.selected_theme
+        if shared_theme:
+            theme = shared_theme
+        else:
+            if "selected_theme" not in st.session_state:
+                st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
+                chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
+                if st.button("このテーマで話す"):
+                    st.session_state.selected_theme = chosen
+                    st.session_state.card_index = 0
+                    st.rerun()
+                st.stop()
+            theme = st.session_state.selected_theme
 
     # 🔽 ここから話題カード・チャット処理などを続ける
 
