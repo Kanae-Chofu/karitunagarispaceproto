@@ -194,11 +194,17 @@ st.title("仮つながりスペース")
 if "kari_id" in st.session_state:
     st.write(f"現在ログイン中： `{st.session_state.kari_id}`")
 
-    # パートナー入力
-    partner = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+
+    # パートナー入力（常にセッション状態から取得）
+    partner_input = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+    if partner_input:
+        st.session_state.partner_id = partner_input
+
+    partner = st.session_state.get("partner_id", "")
     if partner:
-        st.session_state.partner_id = partner
         st.write(f"相手: `{partner}`")
+
+    # 以下、チャット処理・テーマ処理などを続ける
 
         # 話題テーマの共有チェック
         shared_theme = get_shared_theme(st.session_state.kari_id, partner)
