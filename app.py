@@ -1,7 +1,14 @@
 import streamlit as st
 import sqlite3
 import random
-from datetime import datetime
+import time
+
+# 自動更新のためのタイマー（3秒ごと）
+if "last_refresh" not in st.session_state:
+    st.session_state.last_refresh = time.time()
+elif time.time() - st.session_state.last_refresh > 3:
+    st.session_state.last_refresh = time.time()
+    st.rerun()
 
 # 🌙 ダークモード固定
 st.markdown("""
@@ -175,13 +182,11 @@ def get_friends(my_id):
 st.set_page_config(page_title="仮つながりスペース", layout="centered")
 
 # ⏱ 自動更新（5秒ごと）
-st.markdown("""
-<script>
-    setTimeout(function() {
-        window.location.reload();
-    }, 5000);
-</script>
-""", unsafe_allow_html=True)
+if "last_refresh" not in st.session_state:
+    st.session_state.last_refresh = time.time()
+elif time.time() - st.session_state.last_refresh > 3:
+    st.session_state.last_refresh = time.time()
+    st.rerun()
 
 st.title("仮つながりスペース")
 
