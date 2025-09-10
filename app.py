@@ -189,9 +189,9 @@ if "kari_id" in st.session_state:
         shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
         if shared_theme:
-            st.markdown(f"🧠 この会話のテーマ: **{shared_theme}**")
+            st.markdown(f"この会話のテーマ: **{shared_theme}**")
             card_index = st.session_state.get("card_index", 0)
-            st.markdown(f"💬 話題カード: **{topics[shared_theme][card_index]}**")
+            st.markdown(f"話題カード: **{topics[shared_theme][card_index]}**")
             if st.button("次の話題カード"):
                 st.session_state.card_index = (card_index + 1) % len(topics[shared_theme])
                 st.rerun()
@@ -240,7 +240,7 @@ if "kari_id" in st.session_state:
 
     # 申請受信一覧
     st.divider()
-    st.subheader("📬 受信した友達申請")
+    st.subheader("受信した友達申請")
     requests = get_received_requests(st.session_state.kari_id)
     if requests:
         for req in requests:
@@ -256,7 +256,7 @@ if "kari_id" in st.session_state:
         st.write("現在、受信した申請はありません。")
 
     # 友達一覧表示（再接続ボタン付き）
-    st.subheader("👥 あなたの友達一覧")
+    st.subheader("あなたの友達一覧")
     friends = get_friends(st.session_state.kari_id)
     if friends:
         for f in friends:
@@ -271,7 +271,7 @@ if "kari_id" in st.session_state:
         st.write("まだ友達はいません。")
 
 else:
-    st.subheader("🔐 ログイン")
+    st.subheader("ログイン")
     login_id = st.text_input("仮IDでログイン")
     login_pw = st.text_input("パスワード", type="password")
     if st.button("ログインする"):
@@ -282,7 +282,7 @@ else:
         else:
             st.error("ログインに失敗しました。仮IDまたはパスワードが違います")
 
-    st.subheader("🆕 新規登録")
+    st.subheader("新規登録")
     new_id = st.text_input("仮IDを入力（例：赤い猫）")
     new_pw = st.text_input("パスワードを入力", type="password")
     if st.button("登録する"):
