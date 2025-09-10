@@ -44,24 +44,35 @@ topics = {
 def init_db():
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
+
     c.execute('''CREATE TABLE IF NOT EXISTS users (
                     kari_id TEXT PRIMARY KEY,
                     password TEXT)''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     kari_id TEXT,
                     partner_id TEXT,
                     message TEXT,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+
+    # 🔧 ここに追加：話題テーマカラムを追加（既にある場合は無視）
+    try:
+        c.execute("ALTER TABLE messages ADD COLUMN topic_theme TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     c.execute('''CREATE TABLE IF NOT EXISTS friend_requests (
                     from_id TEXT,
                     to_id TEXT,
                     status TEXT DEFAULT 'pending',
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS friends (
                     user TEXT,
                     friend TEXT,
                     UNIQUE(user, friend))''')
+
     conn.commit()
     conn.close()
 
