@@ -182,35 +182,38 @@ st.title("仮つながりスペース")
 if "kari_id" in st.session_state:
     st.write(f"現在ログイン中： `{st.session_state.kari_id}`")
 
-    # パートナー入力
-    partner = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
-    if partner:
-        st.session_state.partner_id = partner
-        st.write(f"相手: `{partner}`")
+partner = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+if partner:
+    st.session_state.partner_id = partner
+    st.write(f"相手: `{partner}`")
 
-        # テーマ共有チェック
-        shared_theme = get_shared_theme(st.session_state.kari_id, partner)
+    # 🔧 ここで shared_theme を定義
+    shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
-        if shared_theme:
-            st.markdown(f"この会話のテーマ: **{shared_theme}**")
-            card_index = st.session_state.get("card_index", 0)
-            st.markdown(f"話題カード: **{topics[shared_theme][card_index]}**")
-            if st.button("次の話題カード"):
-                st.session_state.card_index = (card_index + 1) % len(topics[shared_theme])
-                st.rerun()
-        else:
-            st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
-            chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
-            if st.button("このテーマで話す"):
-                st.session_state.selected_theme = chosen
-                st.session_state.card_index = 0
-                st.session_state.shared_theme = chosen
-                st.rerun()
+    if shared_theme:
+        if "card_index" not in st.session_state:
+            st.session_state.card_index = 0
+        st.markdown(f"この会話のテーマ: **{shared_theme}**")
+        card_index = st.session_state.card_index
+        st.markdown(f"話題カード: **{topics[shared_theme][card_index]}**")
+        if st.button("次の話題カード"):
+            st.session_state.card_index = (card_index + 1) % len(topics[shared_theme])
+            st.rerun()
+    else:
+        st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
+        chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
+        if st.button("このテーマで話す"):
+            st.session_state.selected_theme = chosen
+            st.session_state.card_index = 0
+            st.session_state.shared_theme = chosen
+            st.rerun()
 
-        # チャット履歴表示（滑らかな更新）
+        # チャット履歴表示（滑らかな更新＋履歴全表示）
         chat_box = st.empty()
         with chat_box:
             messages = get_messages(st.session_state.kari_id, partner)
+            st.write(f"履歴件数: {len(messages)}")  # ← デバッグ表示（必要なら削除OK）
+
             for sender, msg in messages:
                 align = "right" if sender == st.session_state.kari_id else "left"
                 bg = "#1F2F54" if align == "right" else "#426AB3"
