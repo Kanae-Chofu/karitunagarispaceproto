@@ -53,25 +53,51 @@ topics = {
 def init_db():
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-                    kari_id TEXT PRIMARY KEY,
-                    password TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS messages (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    kari_id TEXT,
-                    partner_id TEXT,
-                    message TEXT,
-                    topic_theme TEXT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS friend_requests (
-                    from_id TEXT,
-                    to_id TEXT,
-                    status TEXT DEFAULT 'pending',
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS friends (
-                    user TEXT,
-                    friend TEXT,
-                    UNIQUE(user, friend))''')
+
+    # ユーザー管理テーブル（仮ID＋パスワード）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            kari_id TEXT PRIMARY KEY,
+            password TEXT
+        )
+    ''')
+
+    # メッセージテーブル（仮ID同士のチャット＋話題テーマ）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            kari_id TEXT,
+            partner_id TEXT,
+            message TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # topic_theme カラムを追加（存在しない場合のみ）
+    try:
+        c.execute("ALTER TABLE messages ADD COLUMN topic_theme TEXT")
+    except sqlite3.OperationalError:
+        pass  # すでに存在していれば無視
+
+    # 友達申請テーブル（申請元・申請先・ステータス）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS friend_requests (
+            from_id TEXT,
+            to_id TEXT,
+            status TEXT DEFAULT 'pending',
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 承認済みの友達関係テーブル（双方向）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS friends (
+            user TEXT,
+            friend TEXT,
+            UNIQUE(user, friend)
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
