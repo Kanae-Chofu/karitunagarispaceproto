@@ -196,18 +196,16 @@ if "kari_id" in st.session_state:
 
 
     # パートナー入力（常にセッション状態から取得）
-    partner_input = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
-    if partner_input:
-        st.session_state.partner_id = partner_input
+partner_input = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+if partner_input:
+    st.session_state.partner_id = partner_input
 
-    partner = st.session_state.get("partner_id", "")
-    if partner:
-        st.write(f"相手: `{partner}`")
+partner = st.session_state.get("partner_id", "")
+if partner:
+    st.write(f"相手: `{partner}`")
 
-    # 以下、チャット処理・テーマ処理などを続ける
-
-        # 話題テーマの共有チェック
-        shared_theme = get_shared_theme(st.session_state.kari_id, partner)
+    # 🔽 shared_theme をここで定義
+    shared_theme = get_shared_theme(st.session_state.kari_id, partner)
 
     if shared_theme:
         theme = shared_theme
@@ -219,8 +217,10 @@ if "kari_id" in st.session_state:
                 st.session_state.selected_theme = chosen
                 st.session_state.card_index = 0
                 st.rerun()
-            st.stop()  # ← ここで処理を止めて、選択後に再実行されるようにする
+            st.stop()
         theme = st.session_state.selected_theme
+
+    # 🔽 ここから話題カード・チャット処理などを続ける
 
         # 話題カード表示
         card_index = st.session_state.get("card_index", 0)
