@@ -1,14 +1,7 @@
 import streamlit as st
 import sqlite3
 import random
-import time
-
-# ⏱ 自動更新（3秒ごと）
-if "last_refresh" not in st.session_state:
-    st.session_state.last_refresh = time.time()
-elif time.time() - st.session_state.last_refresh > 3:
-    st.session_state.last_refresh = time.time()
-    st.rerun()
+from datetime import datetime
 
 # 🌙 ダークモード固定
 st.markdown("""
@@ -21,9 +14,38 @@ button { background-color: #426AB3 !important; color:#FFFFFF !important; border:
 </style>
 """, unsafe_allow_html=True)
 
-# 話題カードテンプレート
+# ⏱ 自動更新（5秒ごと）
+st.markdown("""
+<script>
+    setTimeout(function() {
+        window.location.reload();
+    }, 5000);
+</script>
+""", unsafe_allow_html=True)
+
+# 話題カードテンプレート（22テーマ × 3トピック）
 topics = {
     "猫": ["猫派？犬派？", "飼ってる猫の名前は？", "猫の仕草で好きなものは？"],
+    "ゲーム": ["最近ハマってるゲームは？", "感動した瞬間は？", "推しキャラは？"],
+    "旅行": ["最近行った場所は？", "旅先での思い出は？", "理想の旅って？"],
+    "音楽": ["よく聴くジャンルは？", "好きなアーティストは？", "音楽で救われた瞬間ある？"],
+    "映画": ["最近観た映画は？", "泣いた映画ある？", "推し俳優は？"],
+    "本": ["好きな作家は？", "人生変えた一冊ある？", "読書ってどんな時にする？"],
+    "カフェ": ["お気に入りのカフェある？", "コーヒー派？紅茶派？", "理想のカフェ空間って？"],
+    "学校": ["得意だった科目は？", "部活何してた？", "学校での思い出ある？"],
+    "仕事": ["今どんな仕事してる？", "やりがい感じる瞬間は？", "理想の働き方って？"],
+    "推し活": ["推しは誰？", "推しのどこが好き？", "推しに救われたことある？"],
+    "SNS": ["よく使うSNSは？", "SNSで嬉しかったことある？", "SNSとの距離感どうしてる？"],
+    "料理": ["得意料理ある？", "最近作ったものは？", "食べる専門？作る派？"],
+    "天気": ["雨の日どう過ごす？", "好きな季節は？", "天気で気分変わるタイプ？"],
+    "ファッション": ["服選びのこだわりある？", "好きな色は？", "最近買った服ある？"],
+    "趣味": ["最近の趣味は？", "昔ハマってたことある？", "趣味って人生に必要？"],
+    "睡眠": ["寝るの得意？", "理想の睡眠時間は？", "寝る前にすることある？"],
+    "朝": ["朝型？夜型？", "朝のルーティンある？", "朝ごはん食べる派？"],
+    "夜": ["夜ってどんな気分？", "夜に聴きたい音楽ある？", "夜更かしするタイプ？"],
+    "ペット": ["飼ってるペットいる？", "ペットとの思い出ある？", "理想のペットは？"],
+    "アート": ["好きな画家いる？", "美術館行く？", "自分で描いたことある？"],
+    "スポーツ": ["観る派？やる派？", "好きなスポーツは？", "運動得意？"],
     "言葉": ["好きな言葉ある？", "座右の銘ってある？", "言葉に救われたことある？"]
 }
 
@@ -39,8 +61,11 @@ def init_db():
                     kari_id TEXT,
                     partner_id TEXT,
                     message TEXT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    topic_theme TEXT)''')
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    try:
+        c.execute("ALTER TABLE messages ADD COLUMN topic_theme TEXT")
+    except sqlite3.OperationalError:
+        pass
     c.execute('''CREATE TABLE IF NOT EXISTS friend_requests (
                     from_id TEXT,
                     to_id TEXT,
@@ -55,7 +80,7 @@ def init_db():
 
 init_db()
 
-# DB操作関数
+# ユーザー登録・ログイン
 def register_user(kari_id, password):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -76,6 +101,7 @@ def login_user(kari_id, password):
     conn.close()
     return result is not None
 
+# メッセージ保存
 def save_message(kari_id, partner_id, message, theme=None):
     conn = sqlite3.connect("chat.db")
     c = conn.cursor()
@@ -156,55 +182,55 @@ st.title("仮つながりスペース")
 if "kari_id" in st.session_state:
     st.write(f"現在ログイン中： `{st.session_state.kari_id}`")
 
-    partner_input = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
-    if partner_input.strip() != "":
-        st.session_state.partner_id = partner_input.strip()
-
-    partner = st.session_state.get("partner_id", "")
-    if partner.strip() != "":
+    # パートナー入力
+    partner = st.text_input("話したい相手の仮IDを入力", st.session_state.get("partner_id", ""))
+    if partner:
+        st.session_state.partner_id = partner
         st.write(f"相手: `{partner}`")
 
+        # テーマ共有チェック
         shared_theme = get_shared_theme(st.session_state.kari_id, partner)
+
         if shared_theme:
-            theme = shared_theme
-            st.session_state.selected_theme = theme
+            st.markdown(f"この会話のテーマ: **{shared_theme}**")
+            card_index = st.session_state.get("card_index", 0)
+            st.markdown(f"話題カード: **{topics[shared_theme][card_index]}**")
+            if st.button("次の話題カード"):
+                st.session_state.card_index = (card_index + 1) % len(topics[shared_theme])
+                st.rerun()
         else:
-            if "selected_theme" not in st.session_state:
-                st.session_state.theme_choices = random.sample(list(topics.keys()), 2)
-                chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
-                if st.button("このテーマで話す"):
-                    st.session_state.selected_theme = chosen
-                    st.session_state.card_index = 0
-                    st.rerun()
-                st.stop()
-            theme = st.session_state.selected_theme
+            st.session_state.theme_choices = random.sample(list(topics.keys()), 4)
+            chosen = st.radio("話したいテーマを選んでください", st.session_state.theme_choices)
+            if st.button("このテーマで話す"):
+                st.session_state.selected_theme = chosen
+                st.session_state.card_index = 0
+                st.session_state.shared_theme = chosen
+                st.rerun()
 
-        card_index = st.session_state.get("card_index", 0)
-        st.markdown(f" 話題カード: **{topics[theme][card_index]}**")
-        if st.button("次の話題カード"):
-            st.session_state.card_index = (card_index + 1) % len(topics[theme])
-            st.rerun()
+        # チャット履歴表示（滑らかな更新）
+        chat_box = st.empty()
+        with chat_box:
+            messages = get_messages(st.session_state.kari_id, partner)
+            for sender, msg in messages:
+                align = "right" if sender == st.session_state.kari_id else "left"
+                bg = "#1F2F54" if align == "right" else "#426AB3"
+                st.markdown(
+                    f"""
+                    <div style='text-align: {align}; margin: 5px 0;'>
+                        <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
+                            {msg}
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-        messages = get_messages(st.session_state.kari_id, partner)
-        for sender, msg in messages:
-            align = "right" if sender == st.session_state.kari_id else "left"
-            bg = "#1F2F54" if align == "right" else "#426AB3"
-            st.markdown(
-                f"""
-                <div style='text-align: {align}; margin: 5px 0;'>
-                    <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
-                        {msg}
-                    </span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
+        # メッセージ送信
         new_message = st.chat_input("メッセージを入力")
         if new_message:
             theme_to_save = get_shared_theme(st.session_state.kari_id, partner)
-            if not theme_to_save and "selected_theme" in st.session_state:
-                theme_to_save = st.session_state.selected_theme
+            if not theme_to_save and "shared_theme" in st.session_state:
+                theme_to_save = st.session_state.shared_theme
             save_message(st.session_state.kari_id, partner, new_message, theme_to_save)
             st.rerun()
 
@@ -234,18 +260,23 @@ if "kari_id" in st.session_state:
     else:
         st.write("現在、受信した申請はありません。")
 
-    # 友達一覧表示
+    # 友達一覧表示（再接続ボタン付き）
     st.subheader("あなたの友達一覧")
     friends = get_friends(st.session_state.kari_id)
     if friends:
         for f in friends:
-            st.write(f"・仮ID `{f}`")
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"・仮ID `{f}`")
+            with col2:
+                if st.button(f"また話す（{f}）", key=f"chat_{f}"):
+                    st.session_state.partner_id = f
+                    st.rerun()
     else:
         st.write("まだ友達はいません。")
 
-# ログインしていない場合
 else:
-    st.subheader("ログイン")
+    st.subheader(" ログイン")
     login_id = st.text_input("仮IDでログイン")
     login_pw = st.text_input("パスワード", type="password")
     if st.button("ログインする"):
@@ -261,8 +292,6 @@ else:
     new_pw = st.text_input("パスワードを入力", type="password")
     if st.button("登録する"):
         if register_user(new_id, new_pw):
-            st.success("登録が完了しました！ログインしました")
-            st.session_state.kari_id = new_id
-            st.rerun()
+            st.success("登録が完了しました！ログインしてください")
         else:
             st.error("その仮IDはすでに使われています")
